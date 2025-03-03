@@ -6,9 +6,9 @@ const container = document.querySelector('.container');
 
 
 const staticBoards = [
-    { name: 'Todo', desc: 'To be done', count: 0 },
-    { name: 'In Progress', desc: 'Being worked on', count: 0 },   
-    { name: 'Done', desc: 'Completed', count: 0 }
+    { name: 'Todo', desc: 'To be done', count: 0, color: '#2679d1' },
+    { name: 'In Progress', desc: 'Being worked on', count: 0, color: '#e6cd12' },   
+    { name: 'Done', desc: 'Completed', count: 0, color: '#15ad22' }
 ]
 
 function createBoard(board) {
@@ -19,6 +19,7 @@ function createBoard(board) {
     boardElement.innerHTML = `
         <div class="board-header">
             <div class="board-title">
+                <div class="color" style="background-color: ${board.color}"></div>
                 <h4>${board.name}</h4>
                 <span class="count">${board.count}</span>
             </div>
@@ -75,23 +76,28 @@ function createBoard(board) {
 
 function deleteBoardInMenu(target, board) {
     
-    target.addEventListener('click', () => {        
+    target.addEventListener('click', () => {
+        const confirmationDialog = confirm('Are you sure you want to delete this board?');
+        if(!confirmationDialog) {
+            return;
+        }
         board.remove();
     })
 }
 
 function editBoardInMenu(target, board) {
     target.addEventListener('click', () => {
-        const boardName = prompt('Enter board name');
-        const boardDesc = prompt('Enter board description');
-        if(!boardName || !boardDesc) {
-            alert('Board name & description is required');
-            board.querySelector('.menu').remove();
+        genericModalForBoard(board, true);
+        // const boardName = prompt('Enter board name');
+        // const boardDesc = prompt('Enter board description');
+        // if(!boardName || !boardDesc) {
+        //     alert('Board name & description is required');
+        //     board.querySelector('.menu').remove();
 
-            return;
-        }
-        board.querySelector('h4').textContent = boardName;
-        board.querySelector('p').textContent = boardDesc;
+        //     return;
+        // }
+        // board.querySelector('h4').textContent = boardName;
+        // board.querySelector('p').textContent = boardDesc;
 
         board.querySelector('.menu').remove();
         
@@ -127,6 +133,8 @@ function genericModalForTask(targetCard, targetBoard, isEdit) {
     allBoards.forEach(board => {
         board.classList.add('blur');
     })
+    console.log("allBoards", allBoards);
+    
     addBoardBtn.classList.add('blur');
     const taskModal = document.createElement('div');
     taskModal.classList.add('task-modal');
@@ -204,6 +212,102 @@ function genericModalForTask(targetCard, targetBoard, isEdit) {
     })
 }
 
+function genericModalForBoard(targetBoard, isEdit) {
+    const boardName = targetBoard?.querySelector('h4')?.textContent || "";
+    const boardDesc = targetBoard?.querySelector('p')?.textContent || "";
+    let boardColor = targetBoard?.querySelector('div .color')?.style?.backgroundColor || "";
+    const allBoards = document.querySelectorAll('.board');
+    allBoards.forEach(board => {
+        board.classList.add('blur');
+    })
+    addBoardBtn.classList.add('blur');
+    const boardModal = document.createElement('div');
+    boardModal.classList.add('board-modal');
+    boardModal.innerHTML = `
+        <div class="boardModal-header">
+            <h3>Edit Board</h3>
+            <div class="close" id="close">x</div>
+        </div>
+        <div class="boardInputSection">
+            <label for="boardName">Name</label>
+            <input value="${boardName}" type="text" id="boardName" placeholder="Board Name">
+        </div>  
+        <div class="color-pick">
+            <label for="boardColor">Color</label>
+            <div class="color-pane">
+                <span value="#ff0000" class="color"></span>
+                <span value="#008000" class="color"></span>
+                <span value="#0000ff" class="color"></span>
+                <span value="#ffff00" class="color"></span>
+                <span value="#000000" class="color"></span>
+                <span value="#bf09ec" class="color"></span>
+            </div>
+        </div>
+        <div class="boardInputSection">
+            <label for="boardDesc">Description</label>
+            <input value="${boardDesc}" type="text" id="boardDesc" placeholder="Board Description">
+        </div>
+        <div class="boardModal-footer">
+            <button class="addBoardModal">Update Board</button>
+        </div>
+    `;
+
+    container.appendChild(boardModal);
+
+    const colors = container.querySelectorAll('.color-pane span');
+    colors.forEach(color => {
+        color.addEventListener('click', () => {
+            colors.forEach(color => {
+                color.style.outline = 'none';
+            })
+            boardColor = color.getAttribute('value');
+            color.style.outline = '3px solid rgb(12, 228, 228)';
+        })
+    })
+
+    const close = boardModal.querySelector('#close');
+    close.addEventListener('click', () => {
+        boardModal.remove();
+        allBoards.forEach(board => {
+            board.classList.remove('blur');
+        })
+        addBoardBtn.classList.remove('blur');
+    })
+
+    const addBoardModal = boardModal.querySelector('.addBoardModal');
+    addBoardModal.addEventListener('click', () => {
+        const boardName = boardModal.querySelector('#boardName').value;
+        const boardDesc = boardModal.querySelector('#boardDesc').value;
+        if(!isEdit) {
+            if(!boardName || !boardDesc) {
+                alert('Board name and description are required');
+                return;
+            }
+
+            createBoard({
+                name: boardName,
+                desc: boardDesc,
+                count: 0,
+                color: boardColor
+            });
+            boardModal.remove();
+            allBoards.forEach(board => {
+                board.classList.remove('blur');
+            })
+            addBoardBtn.classList.remove('blur');
+        } else {
+            targetBoard.querySelector('h4').textContent = boardName;
+            targetBoard.querySelector('p').textContent = boardDesc;
+            targetBoard.querySelector('div .color').style.backgroundColor = boardColor;
+            boardModal.remove();
+            allBoards.forEach(board => {
+                board.classList.remove('blur');
+            })
+            addBoardBtn.classList.remove('blur');
+        }
+    })
+}
+
 function addTaskToBoard(targetCard, targetBoard) {
 
     targetCard.addEventListener('click', () => {
@@ -230,6 +334,12 @@ function editCard(targetCard, targetBoard) {
 function deleteCard(targetCard) {
     const deleteTask = targetCard.querySelector('.delete-task');
     deleteTask.addEventListener('click', () => {
+        console.log("Delete task");
+        
+        const confirmationDialog = confirm('Are you sure you want to delete this task?');
+        if(!confirmationDialog) {
+            return;
+        }
         targetCard.remove();
         const allBoard = document.querySelectorAll('.board');
         allBoard.forEach(board => {
@@ -250,19 +360,7 @@ staticBoards.forEach(board => {
 })
 
 addBoardBtn.addEventListener('click', () => {
-    const boardName = prompt('Enter board name');
-    const boardDesc = prompt('Enter board description');
-
-    if(!boardName || !boardDesc) {
-        alert('Board name & description is required');
-        return;
-    }
-
-    createBoard({
-        name: boardName,
-        desc: boardDesc,
-        count: 0
-    });
+    genericModalForBoard(null, false);
 })
 
 
