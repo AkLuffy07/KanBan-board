@@ -4,6 +4,8 @@ const addBoardBtn = document.getElementById('addBoard');
 const cardContainer = document.querySelector('.card-container');
 const container = document.querySelector('.container');
 
+let boardsFetched = [];
+
 
 const staticBoards = [
     { name: 'Todo', desc: 'To be done', count: 0, color: '#2679d1' },
@@ -11,29 +13,83 @@ const staticBoards = [
     { name: 'Done', desc: 'Completed', count: 0, color: '#15ad22' }
 ]
 
+const localStorageData = {
+    getBoards: () => {
+        const boards = localStorage.getItem('boards');
+        return boards ? JSON.parse(boards) : [];
+    },
+    setBoards: async (boards, slug) => {
+        boardsFetched = JSON.parse(localStorage.getItem('boards')) || [];
+
+        if(boardsFetched?.length > 0) {
+            console.log("boardsFetched", boardsFetched);
+            
+            const boardAvailable = boardsFetched.find(board => board.slug === slug);
+            console.log("boardAvailable ::", boardAvailable);
+            
+            if(boardAvailable) {
+                console.log("boardAvailable (if)", boardAvailable);
+                const boardIndex = boardsFetched.findIndex(board => board.slug === slug);                
+                boardsFetched[boardIndex] = { boards, slug };
+            } else {
+                boardsFetched.push({ boards, slug });
+            }
+        } else {
+            boardsFetched.push({ boards, slug });
+        }
+
+        console.log("boardsFetched", boardsFetched);
+
+        localStorage.setItem('boards', JSON.stringify(boardsFetched));
+        
+        
+        
+        // console.log("availableBoards", availableBoards);
+        
+    }
+}
+
 function createBoard(board) {
     const boardSlug = board.name.toLowerCase().trim().replace(/ /g, "-");
-    const boardElement = document.createElement('div');
+    let boardElement;
+
+    const getBoardsFromLocal = localStorageData.getBoards();
+
+    const boardIndex = getBoardsFromLocal.findIndex(board => board.slug === boardSlug);
+
+    boardElement = document.createElement('div');
     boardElement.classList.add('board');
     boardElement.setAttribute('id', boardSlug);
-    boardElement.innerHTML = `
-        <div class="board-header">
-            <div class="board-title">
-                <div class="color" style="background-color: ${board.color}"></div>
-                <h4>${board.name}</h4>
-                <span class="count">${board.count}</span>
+    if(boardIndex !== -1) {
+        boardElement.innerHTML = getBoardsFromLocal[boardIndex]?.boards;
+    } else {
+        boardElement.innerHTML = `
+            <div class="board-header">
+                <div class="board-title">
+                    <div class="color" style="background-color: ${board.color}"></div>
+                    <h4>${board.name}</h4>
+                    <span class="count">${board.count}</span>
+                </div>
+                <p>${board.desc}</p>
+                <div class="option">
+                    <img width="20px" src="./assets/dots.svg" alt="dots">
+                </div>
             </div>
-            <p>${board.desc}</p>
-            <div class="option">
-                <img width="20px" src="./assets/dots.svg" alt="dots">
+            <div class="taskBtn">
+                <button id="${boardSlug}-addTask" class="add-task">Add Task +</button>
             </div>
-        </div>
-        <div class="taskBtn">
-            <button id="${boardSlug}-addTask" class="add-task">Add Task +</button>
-        </div>
-    `;
+        `;
+    }
     
     cardContainer.appendChild(boardElement);
+
+    const fetchCards = boardElement.querySelectorAll('.card');
+    if(fetchCards.length > 0) {
+        fetchCards.forEach(card => {
+            editCard(card, boardElement);
+            deleteCard(card, boardElement);
+        })
+    }
 
     const addNewTaskBtn = document.getElementById(`${boardSlug}-addTask`);
     
@@ -68,8 +124,22 @@ function createBoard(board) {
             editBoardInMenu(editBoard, boardElement);
         }
 
-        console.log("Final Menu ::", menu);
     })
+
+    // const getBoardsFromLocal = localStorageData.getBoards();
+
+    // const boardIndex = getBoardsFromLocal.findIndex(board => board.slug === boardSlug);
+    console.log("NewBoard :: ", boardElement);
+    
+    
+    localStorageData.setBoards(boardElement.innerHTML, boardSlug)
+
+    // if(boardIndex !== -1) {
+    //     console.log("Add board from local");
+    // } else {
+    //     localStorageData.setBoards(boardElement.innerHTML, boardSlug);
+    // }
+    
 
     dragOverOnBoard(boardElement);
 }
@@ -123,10 +193,18 @@ function dragEvent(target) {
 
     target.addEventListener('dragend', () => {
         target.classList.remove('dragging');
+        const allBoards = document.querySelectorAll('.board');
+        allBoards.forEach(board => {
+            localStorageData.setBoards(board.innerHTML, (board.querySelector('h4').textContent)?.toLowerCase()?.trim()?.replace(/ /g, "-"));
+        })
     })
 }
 
 function genericModalForTask(targetCard, targetBoard, isEdit) {
+    console.log("targetCard", targetCard);
+    console.log("targetBoard", targetBoard);
+    
+    
     const taskName = targetCard.querySelector('h5')?.textContent || "";
     const taskDesc = targetCard.querySelector('p')?.textContent || "";
     const allBoards = document.querySelectorAll('.board');
@@ -190,7 +268,7 @@ function genericModalForTask(targetCard, targetBoard, isEdit) {
             `;
             dragEvent(card);
             targetBoard.appendChild(card);
-            deleteCard(card);
+            deleteCard(card, targetBoard);
             editCard(card, targetBoard);
             updateCount(targetBoard);
             taskModal.remove();
@@ -198,6 +276,8 @@ function genericModalForTask(targetCard, targetBoard, isEdit) {
                 board.classList.remove('blur');
             })
             addBoardBtn.classList.remove('blur');
+            localStorageData.setBoards(targetBoard.innerHTML, (targetBoard.querySelector('h4').textContent)?.toLowerCase()?.trim()?.replace(/ /g, "-"));
+
         } else {
             const taskName = targetCard.querySelector('h5');
             const taskDesc = targetCard.querySelector('p');
@@ -208,6 +288,7 @@ function genericModalForTask(targetCard, targetBoard, isEdit) {
                 board.classList.remove('blur');
             })
             addBoardBtn.classList.remove('blur');
+            localStorageData.setBoards(targetBoard.innerHTML, (targetBoard.querySelector('h4').textContent)?.toLowerCase()?.trim()?.replace(/ /g, "-"));
         }
     })
 }
@@ -225,7 +306,7 @@ function genericModalForBoard(targetBoard, isEdit) {
     boardModal.classList.add('board-modal');
     boardModal.innerHTML = `
         <div class="boardModal-header">
-            <h3>Edit Board</h3>
+            <h3>${isEdit ? "Edit Board" : "Add Board"}</h3>
             <div class="close" id="close">x</div>
         </div>
         <div class="boardInputSection">
@@ -248,7 +329,7 @@ function genericModalForBoard(targetBoard, isEdit) {
             <input value="${boardDesc}" type="text" id="boardDesc" placeholder="Board Description">
         </div>
         <div class="boardModal-footer">
-            <button class="addBoardModal">Update Board</button>
+            <button class="addBoardModal">${isEdit ? "Update Board" : "Add Board"}</button>
         </div>
     `;
 
@@ -331,7 +412,7 @@ function editCard(targetCard, targetBoard) {
     })
 }
 
-function deleteCard(targetCard) {
+function deleteCard(targetCard, targetBoard) {
     const deleteTask = targetCard.querySelector('.delete-task');
     deleteTask.addEventListener('click', () => {
         console.log("Delete task");
@@ -345,6 +426,7 @@ function deleteCard(targetCard) {
         allBoard.forEach(board => {
             updateCount(board);
         })
+        localStorageData.setBoards(targetBoard.innerHTML, (targetBoard.querySelector('h4').textContent)?.toLowerCase()?.trim()?.replace(/ /g, "-"));
     })
 }
 
@@ -354,10 +436,36 @@ function updateCount(targetBoard) {
     
 }
 
+(function staticBoardFetch() {
+    const boards = localStorageData.getBoards();
+    if(boards?.length > 0) {        
+        boards.forEach(board => {
+            const newEle = document.createElement('div');
+            newEle.innerHTML = board.boards;
+            const boardName = newEle.querySelector('h4').textContent;
+            const boardDesc = newEle.querySelector('p').textContent;
+            const count = newEle.querySelector('.count').textContent;
+            const color = newEle.querySelector('div .color').style.backgroundColor;
 
-staticBoards.forEach(board => {
-    createBoard(board);
-})
+            createBoard({
+                name: boardName,
+                desc: boardDesc,
+                count: count,
+                color: color
+            });
+            
+            // createBoard(JSON.parse(board));
+        })
+    } else {
+        staticBoards.forEach(board => {
+            createBoard(board);
+        })
+    }
+})();
+
+// staticBoards.forEach(board => {
+//     createBoard(board);
+// })
 
 addBoardBtn.addEventListener('click', () => {
     genericModalForBoard(null, false);
