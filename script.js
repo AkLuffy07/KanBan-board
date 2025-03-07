@@ -22,7 +22,6 @@ const localStorageData = {
         const boardsFetched = JSON.parse(localStorage.getItem('boards')) || [];
         
         const boardIndex = boardsFetched.findIndex(board => board.slug === slug);
-
         if (boardIndex !== -1) {
             // Update existing board
             boardsFetched[boardIndex] = { boards, slug };
@@ -30,15 +29,12 @@ const localStorageData = {
             // Add new board
             boardsFetched.push({ boards, slug });
         }
-
         localStorage.setItem('boards', JSON.stringify(boardsFetched));
     },
 
     deleteBoard: async (slug) => {
         let boardsFetched = JSON.parse(localStorage.getItem('boards')) || [];
-
         boardsFetched = boardsFetched.filter(board => board.slug !== slug);
-
         localStorage.setItem('boards', JSON.stringify(boardsFetched));
     }
 };
@@ -209,6 +205,7 @@ function genericModalForTask(targetCard, targetBoard, isEdit) {
     `;
 
     container.appendChild(taskModal);
+    taskModal.querySelector('#taskName').focus();
 
     const close = taskModal.querySelector('#close');
     close.addEventListener('click', () => {
@@ -224,6 +221,7 @@ function genericModalForTask(targetCard, targetBoard, isEdit) {
         if(!isEdit) {
             const taskName = taskModal.querySelector('#taskName').value;
             const taskDesc = taskModal.querySelector('#taskDesc').value;
+            const currentDate = formatDateTime();
 
             const card = document.createElement('div');
             card.classList.add('card');
@@ -238,6 +236,9 @@ function genericModalForTask(targetCard, targetBoard, isEdit) {
                 <button class="edit-task">
                     <img width="15px" src="./assets/edit-icon.svg" alt="dots">
                 </button>
+            </div>
+            <div class="currentDate">
+                <span>${currentDate}</span>
             </div>
             `;
             dragEvent(card);
@@ -440,6 +441,19 @@ function updateCount(targetBoard) {
         })
     }
 })();
+
+formatDateTime = () => {
+    const date = new Date();
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const formattedDate = `${day}/${month}/${year}`;
+    console.log(formattedDate);
+    
+    const formatter = new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const formattedTime = formatter.format(date);
+    return `${formattedDate} ${formattedTime}`
+}
 
 
 addBoardBtn.addEventListener('click', () => {

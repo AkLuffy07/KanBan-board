@@ -43,7 +43,7 @@
 .card {
     position: relative;
     border: 1px solid;
-    padding: 15px 8px;
+    padding: 20px 8px;
     margin-top: 7px;
     border: 1px solid #ececec;
     background-color: #ececec;
@@ -160,7 +160,7 @@ p {
 
 .dragging {
     opacity: 0.5;
-    transform: rotate(-4deg);
+    transform: rotate(-2deg);
     cursor: grabbing;
 }
 
@@ -307,4 +307,18 @@ p {
 .color:nth-child(5) { background-color: #000000; }
 .color:nth-child(6) { background-color: #bf09ec; }
 
+.currentDate {
+    position: absolute;
+    right: 4px;
+    bottom: 2px;
 
+    span {
+        font-size: 10px;
+        font-style: italic;
+        background-color: #4c00fe;
+        font-weight: 700;
+        color: #ffffff;
+        border-radius: 5px;
+        padding: 0 5px;
+    }
+}
